@@ -12,7 +12,7 @@ Install using composer:
 composer require psdi/motif [--no-dev]
 ```
 
-> Include the flag `--no-dev` if you want to omit installing PHPUnit (which isn't exactly a lightweight framework.)
+> Include the flag `--no-dev` if you want to omit installing PHPUnit (which isn't exactly a lightweight framework).
 
 
 
@@ -48,7 +48,7 @@ echo Formatter::display('Error downloading files.', 'error');
 // [5,6,7] Some more examples
 echo Formatter::formatLine('This is a sample text. ', 'bold,italic|color:yellow');
 echo Formatter::formatLine(
-	'This is also a sample text, but in magenta.',
+    'This is also a sample text, but in magenta.',
     'italic|color:magenta'
 );
 echo Formatter::display('Success! •ᴗ•', 'success');
