@@ -26,22 +26,26 @@ class Formatter
     ];
 
     /**
-     * Formats a text according to user-inputted options
+     * Formats a string according to user-inputted options
      *
      * @param string $text Text
-     * @param string|array $styles Text styles
-     * @param string $fore Text color
-     * @param string $back Background color
-     * @param bool $wrap Specify if text is to be wrapped in line breaks (experimental!)
-     * @return string
+     * @param string $styles Text styles
      */
-    public static function format(string $text = '', $styles = [], $fore = '', $back = '', bool $wrap = false): string
+    public static function format(string $text, string $styles = ''): string
     {
-        $styles = is_array($styles) ? $styles : [$styles];
-        $format = self::translate($styles, $fore, $back);
-        $text = $wrap ? "\n\n$text\n" : $text;
+        $format = self::parse($styles);
+        return "\e[{$format}m{$text}\e[0m";
+    }
 
-        return "\e[{$format}m{$text}\e[0m\n";
+    /**
+     * Expands on `self::format()`; appends a line break to string
+     *
+     * @param string $text Text
+     * @param string $styles Text styles
+     */
+    public static function formatLine(string $text, string $styles = ''): string
+    {
+        return self::format($text, $styles) . "\n";
     }
 
     /**
@@ -55,7 +59,7 @@ class Formatter
      * @param string $mode
      * @return string
      */
-    public static function colorize(string $text = '', string $mode = 'info'): string
+    public static function display(string $text, string $mode = 'info'): string
     {
         $fore = 'white';
         switch (strtolower($mode)) {
@@ -72,29 +76,56 @@ class Formatter
                 break;
             default:
                 $back = 'blue';
+                $fore = 'black';
                 break;
         }
 
-        return self::format($text, [], $fore, $back);
+        return self::formatLine($text, "color:$fore|bg:$back");
     }
 
     /**
-     * Assembles the format hints from the passed params
+     * Interprets a user-given string
      *
-     * @param array $styles
-     * @param string $fore
-     * @param string $back
+     * @param string $options An options string
      * @return string
      */
-    private static function translate(array $styles, string $fore, string $back): string
+    private static function parse(string $options): string
     {
-        $format = [];
-        foreach ($styles as $style) {
-            $format[] = self::$styleMap[$style] ?? null;
-        }
-        $format[] = self::$foregroundMap[$fore] ?? null;
-        $format[] = self::$backgroundMap[$back] ?? null;
+        $styles = [];
 
-        return implode(';', array_filter($format));
+        foreach (explode('|', $options) as $option) {
+            $option = trim($option);
+
+            if (strpos($option, 'bg:') !== false) {
+                $bg = str_replace('bg:', '', $option);
+                $num = self::$backgroundMap[trim($bg)] ?? null;
+            } else if (strpos($option, 'color:') !== false) {
+                $color = str_replace('color:', '', $option);
+                $num = self::$foregroundMap[trim($color)] ?? null;
+            } else {
+                $misc = self::mapFormats($option);
+                $num = strlen($misc) ? $misc : null;
+            }
+
+            if (!is_null($num)) {
+                $styles[] = $num;
+            }
+        }
+
+        return implode(';', $styles);
+    }
+
+    private static function mapFormats(string $formats): string
+    {
+        $styles = [];
+
+        foreach (explode(',', $formats) as $part) {
+            $part = trim($part);
+            if (key_exists($part, self::$styleMap)) {
+                $styles[] = self::$styleMap[$part];
+            }
+        }
+
+        return implode(';', $styles);
     }
 }
